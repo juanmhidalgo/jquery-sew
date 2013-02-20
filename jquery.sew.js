@@ -31,7 +31,15 @@
 		this._defaults = defaults;
 		this._name = pluginName;
 
-		this.expression = new RegExp('(?:^|\\b|\\s)' + this.options.token + '([\\w.]*)$');
+		/**
+		* Without spaces
+		**/
+		//this.expression = new RegExp('(?:^|\\b|\\s)' + this.options.token + '([\\w.]*)$');
+
+		/**
+		* With spaces
+		**/
+		this.expression = new RegExp('(?:^|\\b|\\s)' + this.options.token + '([\\w.]* ?[\\w.]*)$');
 		this.cleanupHandle = null;
 
 		this.init();
@@ -44,13 +52,14 @@
 	Plugin.KEYS = [40, 38, 13, 27, 9];
 
 	Plugin.prototype.init = function () {
-		if(this.options.values.length < 1) return;
+		if(this.options.values.length < 1) {
+			return;
+		}
 
-		this.$element
-									.bind('keyup', $.proxy(this.onKeyUp, this))
-									.bind('keydown', $.proxy(this.onKeyDown, this))
-									.bind('focus', $.proxy(this.renderElements, this, this.options.values))
-									.bind('blur', $.proxy(this.remove, this));
+		this.$element.bind('keyup', $.proxy(this.onKeyUp, this))
+				.bind('keydown', $.proxy(this.onKeyDown, this))
+				.bind('focus', $.proxy(this.renderElements, this, this.options.values))
+				.bind('blur', $.proxy(this.remove, this));
 	};
 
 	Plugin.prototype.reset = function () {
@@ -132,7 +141,9 @@
 	};
 
 	Plugin.prototype.displayList = function () {
-		if(!this.filtered.length) return;
+		if(!this.filtered.length){
+			return;
+		}
 
 		this.$itemList.show();
 		var element = this.$element;
@@ -151,7 +162,9 @@
 	};
 
 	Plugin.prototype.filterList = function (val) {
-		if(val == this.lastFilter) return;
+		if(val == this.lastFilter){
+			return;
+		}
 
 		this.lastFilter = val;
 		this.$itemList.find(".-sew-list-item").remove();
@@ -164,9 +177,7 @@
 				return false;
 			}
 
-			return	val === "" ||
-							e.val.toLowerCase().indexOf(val.toLowerCase()) >= 0 ||
-							(e.meta || "").toLowerCase().indexOf(val.toLowerCase()) >= 0;
+			return	val === "" ||  e.val.toLowerCase().indexOf(val.toLowerCase()) >= 0 || (e.meta || "").toLowerCase().indexOf(val.toLowerCase()) >= 0;
 		}, this));
 
 		if(vals.length) {
@@ -182,7 +193,9 @@
 
 		elements.forEach(function (e) {
 			var hasElement = target.map(function (j) { return j.val; }).indexOf(e.val) >= 0;
-			if(hasElement) return;
+			if(hasElement){
+				return;
+			}
 			target.push(e);
 		});
 
@@ -228,7 +241,9 @@
 
 	Plugin.prototype.onKeyDown = function (e) {
 		var listVisible = this.$itemList.is(":visible");
-		if(!listVisible || (Plugin.KEYS.indexOf(e.keyCode) < 0)) return;
+		if(!listVisible || (Plugin.KEYS.indexOf(e.keyCode) < 0)){
+			return;
+		}
 
 		switch(e.keyCode) {
 		case 9:
@@ -251,7 +266,9 @@
 	};
 
 	Plugin.prototype.onItemClick = function (element, e) {
-		if(this.cleanupHandle) window.clearTimeout(this.cleanupHandle);
+		if(this.cleanupHandle){
+			window.clearTimeout(this.cleanupHandle);
+		}
 
 		this.replace(element.val);
 		this.hideList();
