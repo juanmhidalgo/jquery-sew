@@ -86,8 +86,8 @@
 
 	Plugin.prototype.select = function () {
 		this.replace(this.filtered[this.index].val);
+		this.$element.trigger('mention-selected',this.filtered[this.index]);
 		this.hideList();
-		this.$element.trigger('mention-selected',this.filtered);
 	};
 
 	Plugin.prototype.remove = function () {
@@ -271,6 +271,7 @@
 		}
 
 		this.replace(element.val);
+		this.$element.trigger('mention-selected',this.filtered[this.index]);
 		this.hideList();
 	};
 
