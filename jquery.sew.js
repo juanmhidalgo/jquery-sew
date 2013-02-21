@@ -1,3 +1,93 @@
+//https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/Array/filter
+if (!Array.prototype.filter){
+	Array.prototype.filter = function(fun /*, thisp */){
+		"use strict";
+
+	if (this === null){
+		throw new TypeError();
+	}
+
+	var t = Object(this),
+		len = t.length >>> 0;
+
+	if (typeof fun != "function"){
+		throw new TypeError();
+	}
+
+	var res = [],
+		thisp = arguments[1],
+		val;
+
+	for (var i = 0; i < len; i++){
+		if (i in t){
+			val = t[i]; // in case fun mutates this
+			if (fun.call(thisp, val, i, t)){
+				res.push(val);
+			}
+		}
+	}
+
+	return res;
+	};
+}
+
+
+//https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/Array/forEach
+if ( !Array.prototype.forEach ) {
+	Array.prototype.forEach = function forEach( callback, thisArg ) {
+		var T, k;
+
+		if ( this === null ) {
+			throw new TypeError( "this is null or not defined" );
+		}
+
+		// 1. Let O be the result of calling ToObject passing the |this| value as the argument.
+		var O = Object(this);
+
+		// 2. Let lenValue be the result of calling the Get internal method of O with the argument "length".
+		// 3. Let len be ToUint32(lenValue).
+		var len = O.length >>> 0; // Hack to convert O.length to a UInt32
+
+		// 4. If IsCallable(callback) is false, throw a TypeError exception.
+		// See: http://es5.github.com/#x9.11
+		if ( {}.toString.call(callback) !== "[object Function]" ) {
+			throw new TypeError( callback + " is not a function" );
+		}
+
+		// 5. If thisArg was supplied, let T be thisArg; else let T be undefined.
+		if ( thisArg ) {
+			T = thisArg;
+		}
+
+		// 6. Let k be 0
+		k = 0;
+
+		// 7. Repeat, while k < len
+		while( k < len ) {
+			var kValue;
+			// a. Let Pk be ToString(k).
+			//   This is implicit for LHS operands of the in operator
+			// b. Let kPresent be the result of calling the HasProperty internal method of O with argument Pk.
+			//   This step can be combined with c
+			// c. If kPresent is true, then
+			if ( Object.prototype.hasOwnProperty.call(O, k) ) {
+
+				// i. Let kValue be the result of calling the Get internal method of O with argument Pk.
+				kValue = O[ k ];
+
+				// ii. Call the Call internal method of callback with T as the this value and
+				// argument list containing kValue, k, and O.
+				callback.call( T, kValue, k, O );
+			}
+			// d. Increase k by 1.
+			k++;
+		}
+		// 8. return undefined
+	};
+}
+
+
+
 /**
  * jQuery plugin for getting position of cursor in textarea
  * @license under dfyw (do the fuck you want)
@@ -41,6 +131,7 @@
 		**/
 		this.expression = new RegExp('(?:^|\\b|\\s)' + this.options.token + '([\\w.]* ?[\\w.]*)$');
 		this.cleanupHandle = null;
+		this.mentions = [];
 
 		this.init();
 	}
@@ -52,18 +143,20 @@
 	Plugin.KEYS = [40, 38, 13, 27, 9];
 
 	Plugin.prototype.init = function () {
-		if(this.options.values.length < 1) {
+		if(!this.options.values) {
 			return;
 		}
-
+		//this.filtered = this.getValues();
+		this.filtered = [];
 		this.$element.bind('keyup', $.proxy(this.onKeyUp, this))
 				.bind('keydown', $.proxy(this.onKeyDown, this))
-				.bind('focus', $.proxy(this.renderElements, this, this.options.values))
+				.bind('focus', $.proxy(this.preRender, this))
 				.bind('blur', $.proxy(this.remove, this));
+				//.bind('focus', $.proxy(this.renderElements, this, this.filtered))
 	};
 
 	Plugin.prototype.reset = function () {
-		if(this.options.unique) {
+		if(this.options.unique && typeof this.options.values != 'function') {
 			this.options.values = Plugin.getUniqueElements(this.options.values);
 		}
 
@@ -71,7 +164,9 @@
 		this.matched = false;
 		this.dontFilter = false;
 		this.lastFilter = undefined;
-		this.filtered = this.options.values.slice(0);
+		this.$selected = null;
+
+		this.filtered = this.getValues().slice(0);
 	};
 
 	Plugin.prototype.next = function () {
@@ -87,6 +182,7 @@
 	Plugin.prototype.select = function () {
 		this.replace(this.filtered[this.index].val);
 		this.$element.trigger('mention-selected',this.filtered[this.index]);
+		this.mentions.push(this.filtered[this.index]);
 		this.hideList();
 	};
 
@@ -99,67 +195,86 @@
 	};
 
 	Plugin.prototype.replace = function (replacement) {
-		var startpos = this.$element.getCursorPosition();
-		var separator = startpos === 1 ? '' : ' ';
+		var startpos = this.$element.getCursorPosition(),
+			separator = startpos === 1 ? '' : ' ',
+			fullStuff = this.getText(),
+			val = fullStuff.substring(0, startpos),
+			posfix = fullStuff.substring(startpos, fullStuff.length),
+			separator2 = posfix.match(/^\s/) ? '' : ' ',
+			finalFight;
 
-		var fullStuff = this.getText();
-		var val = fullStuff.substring(0, startpos);
+
 		val = val.replace(this.expression, separator + this.options.token + replacement);
-
-		var posfix = fullStuff.substring(startpos, fullStuff.length);
-		var separator2 = posfix.match(/^\s/) ? '' : ' ';
-
-		var finalFight = val + separator2 + posfix;
+		finalFight = val + separator2 + posfix;
 		this.setText(finalFight);
 		this.$element.setCursorPosition(val.length + 1);
 	};
 
 	Plugin.prototype.hightlightItem = function () {
-		this.$itemList.find(".-sew-list-item").removeClass("selected");
+		this.$selected && this.$selected.removeClass("selected");
 
-		var container = this.$itemList.find(".-sew-list-item").parent();
-		var element = this.filtered[this.index].element.addClass("selected");
+		var container = this.$itemListUL,
+			element = this.filtered[this.index].element.addClass("selected"),
+			scrollPosition = element.position().top;
+			this.$selected = element;
 
-		var scrollPosition = element.position().top;
 		container.scrollTop(container.scrollTop() + scrollPosition);
 	};
 
-	Plugin.prototype.renderElements = function (values) {
+	Plugin.prototype.preRender = function(){
 		$("body").append(this.$itemList);
+		this.$itemListUL = this.$itemList.find('ul').empty();
+		this.$selected = null;
 
-		var container = this.$itemList.find('ul').empty();
-		values.forEach($.proxy(function (e, i) {
-			var $item = $(Plugin.ITEM_TEMPLATE);
+	}
 
-			this.options.elementFactory($item, e);
+	Plugin.prototype.renderElements = function (values) {
+		var container = this.$itemListUL,
+			i, e, count, fn;
 
-			e.element = $item.appendTo(container).bind('click', $.proxy(this.onItemClick, this, e)).bind('mouseover', $.proxy(this.onItemHover, this, i));
-		}, this));
+		if(values){
+			fn = function (e, i) {
+				var $item = $(Plugin.ITEM_TEMPLATE);
+				this.options.elementFactory($item, e);
+				e.element = $item.appendTo(container).bind('click', $.proxy(this.onItemClick, this, e)).bind('mouseover', $.proxy(this.onItemHover, this, i));
+			}
+			count = values.length;
+			for(i=0; i<count; i+=1){
+				e = values[i];
+				fn.call(this,e,i);
+			}
+		}
 
 		this.index = 0;
 		this.hightlightItem();
 	};
 
 	Plugin.prototype.displayList = function () {
-		if(!this.filtered.length){
-			return;
-		}
 
-		this.$itemList.show();
-		var element = this.$element;
-		var offset = this.$element.offset();
-		var pos = element.getCaretPosition();
+		var element = this.$element,
+			offset = this.$element.offset(),
+			pos = element.getCaretPosition();
 
 		this.$itemList.css({
 			left: offset.left + pos.left,
-			top: offset.top + pos.top
+			top: offset.top + pos.top + 15
 		});
+
+		this.filtered.length && this.$itemList.show();
 	};
 
 	Plugin.prototype.hideList = function () {
 		this.$itemList.hide();
 		this.reset();
 	};
+
+	Plugin.prototype.getValues = function(val){
+		if(typeof this.options.values == 'function'){
+			return this.options.values(val);
+		}else{
+			return this.options.values;
+		}
+	}
 
 	Plugin.prototype.filterList = function (val) {
 		if(val == this.lastFilter){
@@ -168,17 +283,22 @@
 
 		this.lastFilter = val;
 		this.$itemList.find(".-sew-list-item").remove();
-		var values = this.options.values;
 
+		var values = this.getValues(val),
+			vals;
 
-		var vals = this.filtered = values.filter($.proxy(function (e) {
-			var exp = new RegExp('\\W*' + this.options.token + e.val + '(\\W|$)');
-			if(!this.options.repeat && this.getText().match(exp)) {
-				return false;
-			}
+		if(typeof this.options.filter == 'function'){
+			vals = this.filtered = this.options.filter.call(this,values,val);
+		}else{
+			vals = this.filtered = values.filter($.proxy(function (e) {
+				var exp = new RegExp('\\W*' + this.options.token + e.val + '(\\W|$)');
+				if(!this.options.repeat && this.getText().match(exp)) {
+					return false;
+				}
 
-			return	val === "" ||  e.val.toLowerCase().indexOf(val.toLowerCase()) >= 0 || (e.meta || "").toLowerCase().indexOf(val.toLowerCase()) >= 0;
-		}, this));
+				return	val === "" ||  e.val.toLowerCase().indexOf(val.toLowerCase()) >= 0 || (e.meta || "").toLowerCase().indexOf(val.toLowerCase()) >= 0;
+			}, this));
+		}
 
 		if(vals.length) {
 			this.renderElements(vals);
@@ -218,8 +338,8 @@
 
 	Plugin.prototype.onKeyUp = function (e) {
 		var startpos = this.$element.getCursorPosition();
-		var val = this.getText().substring(0, startpos);
-		var matches = val.match(this.expression);
+			val = this.getText().substring(0, startpos),
+			matches = val.match(this.expression);
 
 		if(!matches && this.matched) {
 			this.matched = false;
@@ -269,10 +389,7 @@
 		if(this.cleanupHandle){
 			window.clearTimeout(this.cleanupHandle);
 		}
-
-		this.replace(element.val);
-		this.$element.trigger('mention-selected',this.filtered[this.index]);
-		this.hideList();
+		this.select();
 	};
 
 	Plugin.prototype.onItemHover = function (index, e) {
@@ -280,11 +397,44 @@
 		this.hightlightItem();
 	};
 
-	$.fn[pluginName] = function (options) {
+	Plugin.prototype.getMentions = function(callback){
+		var  that = this,
+			target = [],
+			txt = this.getText(),
+			men = this.mentions.filter(function(el){
+				var exp = new RegExp('\\W*' + that.options.token + el.val + '(\\W|$)');
+				return txt.match(exp);
+			});
+
+			men.forEach(function (e) {
+				var hasElement = target.map(function (j) { return j.val; }).indexOf(e.val) >= 0;
+				if(hasElement){
+					return;
+				}
+				delete e.element;
+				target.push(e);
+			});
+		callback.call(this,target)
+	}
+
+	Plugin.prototype.setMentions = function(mentions){
+		this.mentions = mentions;
+	}
+
+	Plugin.prototype.addMention = function(mention){
+		this.mentions.push(mention);
+	}
+
+	$.fn[pluginName] = function(option){
+		var args = arguments;
 		return this.each(function () {
-			if(!$.data(this, 'plugin_' + pluginName)) {
-				$.data(this, 'plugin_' + pluginName, new Plugin(this, options));
-			}
-		});
-	};
+			var $this = $(this)
+				, data = $this.data(pluginName)
+				, options = typeof option == 'object' && option
+			if (!data){$this.data(pluginName, (data = new Plugin(this, options)));}
+			if (typeof option == 'string') { return data[option].apply($(this).data(pluginName),Array.prototype.slice.call( args, 1 ))}
+		})
+	}
+
+
 }(jQuery, window));
