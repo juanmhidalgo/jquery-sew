@@ -20,15 +20,15 @@
 			$(document).ready(function() {
 				var values = function(val,callback){
 
-					var data =   [{val:'santiagotactivos', meta:'Santiago Montero'},
-							  {val:'johnny halife', meta:'Johnny Halife'},
-							  {val:'ariel flesler', meta:'Ariel Flesler'},
-							  {val:'raul bajales', meta:'Raul Bajales'},
-							  {val:'Juan Manuel', meta:'Juan Manuel'},
-							  {val:'Pablo Golfred', meta:'Pablo Golfred'},
-							  {val:'Valeria Morisa', meta:'Valeria Morisa'},
-							  {val:'Ernesto Sabio', meta:'Ernesto Sabio'},
-							  {val:'Jimena Dilous', meta:'Jimena Dilous', otro: 'OTro', id: '1234'}]
+					var data =   [{name:'santiagotactivos', meta:'Santiago Montero'},
+							  {name:'johnny halife', meta:'Johnny Halife'},
+							  {name:'ariel flesler', meta:'Ariel Flesler'},
+							  {name:'raul bajales', meta:'Raul Bajales'},
+							  {name:'Juan Manuel', meta:'Juan Manuel'},
+							  {name:'Pablo Golfred', meta:'Pablo Golfred'},
+							  {name:'Valeria Morisa', meta:'Valeria Morisa'},
+							  {name:'Ernesto Sabio', meta:'Ernesto Sabio'},
+							  {name:'Jimena Dilous', meta:'Jimena Dilous', otro: 'OTro', id: '1234'}]
 
 					if(typeof callback == 'function'){
 						callback(data);
@@ -42,12 +42,12 @@
 				var customItemTemplate = "<div><span />&nbsp;<small /></div>";
 
 				function elementFactory(element, e) {
-					var template = $(customItemTemplate).find('span').text('@' + e.val).end().find('small').text("(" + (e.meta || e.val) + ")").end();
+					var template = $(customItemTemplate).find('span').text('@' + e.name).end().find('small').text("(" + (e.meta || e.name) + ")").end();
 					element.append(template);
 				};
 
 				// here is how we use it
-				$('textarea').sew({values: values, elementFactory: elementFactory}).on('mention-selected',function(e, mention){
+				$('textarea').sew({values: values, elementFactory: elementFactory, val: 'name'}).on('mention-selected',function(e, mention){
 					console.log(arguments);
 				});
 

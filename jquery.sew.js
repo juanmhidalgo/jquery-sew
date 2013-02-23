@@ -211,6 +211,8 @@ if (!Array.prototype.map) {
 		document = window.document,
 		defaults = {
 			token: '@',
+			meta: 'meta',
+			val: 'val',
 			elementFactory: elementFactory,
 			values: [],
 			unique: false,
@@ -287,7 +289,7 @@ if (!Array.prototype.map) {
 	};
 
 	Plugin.prototype.select = function () {
-		this.replace(this.filtered[this.index].val);
+		this.replace(this.filtered[this.index][this.options.val]);
 		this.$element.trigger('mention-selected',this.filtered[this.index]);
 		this.mentions.push(this.filtered[this.index]);
 		this.hideList();
@@ -402,11 +404,11 @@ if (!Array.prototype.map) {
 			vals = this.filtered = this.options.filter.call(this,values || [],val);
 		}else{
 			vals = this.filtered = values.filter($.proxy(function (e) {
-				var exp = new RegExp('\\W*' + this.options.token + e.val + '(\\W|$)');
+				var exp = new RegExp('\\W*' + this.options.token + e[this.options.val] + '(\\W|$)');
 				if(!this.options.repeat && this.getText().match(exp)) {
 					return this;
 				}
-				return	val === "" ||  e.val.toLowerCase().indexOf(val.toLowerCase()) >= 0 || (e.meta || "").toLowerCase().indexOf(val.toLowerCase()) >= 0;
+				return	val === "" ||  e[this.options.val].toLowerCase().indexOf(val.toLowerCase()) >= 0 || (e[this.options.meta] || "").toLowerCase().indexOf(val.toLowerCase()) >= 0;
 			}, this));
 
 		}
@@ -444,7 +446,7 @@ if (!Array.prototype.map) {
 		var target = [];
 
 		elements.forEach(function (e) {
-			var hasElement = target.map(function (j) { return j.val; }).indexOf(e.val) >= 0;
+			var hasElement = target.map(function (j) { return j[this.options.val]; }).indexOf(e[this.options.val]) >= 0;
 			if(hasElement){
 				return;
 			}
@@ -534,12 +536,12 @@ if (!Array.prototype.map) {
 			target = [],
 			txt = this.getText(),
 			men = this.mentions.filter(function(el){
-				var exp = new RegExp('\\W*' + that.options.token + el.val + '(\\W|$)');
+				var exp = new RegExp('\\W*' + that.options.token + el[this.options.val] + '(\\W|$)');
 				return txt.match(exp);
 			});
 
 			men.forEach(function (e) {
-				var hasElement = target.map(function (j) { return j.val; }).indexOf(e.val) >= 0;
+				var hasElement = target.map(function (j) { return j[this.options.val]; }).indexOf(e[this.options.val]) >= 0;
 				if(hasElement){
 					return;
 				}
