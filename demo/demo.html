@@ -10,16 +10,7 @@
         <h3>enable auto-complete by typing @ </h3>
         <div>
         	<h4> Works on any textarea/input element from your document </h4>
-					<textarea style="width:415px; resize:none;"></textarea>
-
-					<h5> Supports unique elements </h5>
-					<input type="text" style="width:415px; resize:none;" />
-
-					<h5> Supports content editable elements</h5>
-					<div class="editable" contentEditable="true" style="width: 415px; height: 100px; border: 1px solid #888"></div>
-
-					<h5> Prevent repetition </h5>
-					<div class="editable-repeat" contentEditable="true" style="width: 415px; height: 100px; border: 1px solid #888"></div>
+					<textarea style="width:415px;height: 300px;"></textarea>
 				</div>
 
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
@@ -27,37 +18,39 @@
 				<script type="text/javascript" src="../jquery.sew.js"></script>
 		<script>
 			$(document).ready(function() {
-				var values = [{val:'santiagotactivos', meta:'Santiago Montero'},
-							  {val:'johnnyhalife', meta:'Johnny Halife'},
-							  {val:'arielflesler', meta:'Ariel Flesler'},
-							  {val:'rbajales', meta:'Raul Bajales'}];
+				var values = function(val,callback){
 
-				for (var i = 0; i < 10; i++) {
-					values.push({val: 'johnnyhalife' + i})
+					var data =   [{val:'santiagotactivos', meta:'Santiago Montero'},
+							  {val:'johnny halife', meta:'Johnny Halife'},
+							  {val:'ariel flesler', meta:'Ariel Flesler'},
+							  {val:'raul bajales', meta:'Raul Bajales'},
+							  {val:'Juan Manuel', meta:'Juan Manuel'},
+							  {val:'Pablo Golfred', meta:'Pablo Golfred'},
+							  {val:'Valeria Morisa', meta:'Valeria Morisa'},
+							  {val:'Ernesto Sabio', meta:'Ernesto Sabio'},
+							  {val:'Jimena Dilous', meta:'Jimena Dilous', otro: 'OTro', id: '1234'}]
+
+					if(typeof callback == 'function'){
+						callback(data);
+						return;
+					}
+					return data;
+
 				};
 
 
 				var customItemTemplate = "<div><span />&nbsp;<small /></div>";
 
 				function elementFactory(element, e) {
-					var template = $(customItemTemplate).find('span')
-															.text('@' + e.val).end()
-												   		.find('small')
-															.text("(" + (e.meta || e.val) + ")").end();
+					var template = $(customItemTemplate).find('span').text('@' + e.val).end().find('small').text("(" + (e.meta || e.val) + ")").end();
 					element.append(template);
 				};
 
 				// here is how we use it
-				$('textarea').sew({values: values, elementFactory: elementFactory});
+				$('textarea').sew({values: values, elementFactory: elementFactory}).on('mention-selected',function(e, mention){
+					console.log(arguments);
+				});
 
-
-				// with repetition but unique flag
-				var repeatedElements = [{val: 'johnny'}, {val: 'chanta'}, {val: 'chanta'}, {val: 'chanta'}];
-				$('input').sew({unique: true, values: repeatedElements, elementFactory: elementFactory});
-
-				$('.editable').sew({unique: true, values: repeatedElements, elementFactory: elementFactory});
-				$('.editable-repeat').sew({repeat: false, unique: true, values: repeatedElements, elementFactory: elementFactory});
-				$('.editable-position').sew({repeat: false, unique: true, values: values, elementFactory: elementFactory});
 			});
 		</script>
     </body>

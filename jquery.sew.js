@@ -384,36 +384,31 @@ if (!Array.prototype.map) {
 		},500)
 	};
 
-	Plugin.prototype.getValues = function(val){
+	Plugin.prototype.getValues = function(val, callback){
 		if(typeof this.options.values == 'function'){
-			return this.options.values(val);
+			if(typeof callback !== 'function'){
+				throw new TypeError();
+			}
+			this.options.values(val, callback)
 		}else{
 			return this.options.values;
 		}
 	}
 
-	Plugin.prototype.filterList = function (val) {
-		if(val == this.lastFilter){
-			return;
-		}
-
-		this.lastFilter = val;
-		this.$itemList.find(".-sew-list-item").remove();
-
-		var values = this.getValues(val),
-			vals;
-
+	Plugin.prototype._filterList = function(data,val){
+		var vals;
+		values = data;
 		if(typeof this.options.filter == 'function'){
-			vals = this.filtered = this.options.filter.call(this,values,val);
+			vals = this.filtered = this.options.filter.call(this,values || [],val);
 		}else{
 			vals = this.filtered = values.filter($.proxy(function (e) {
 				var exp = new RegExp('\\W*' + this.options.token + e.val + '(\\W|$)');
 				if(!this.options.repeat && this.getText().match(exp)) {
-					return false;
+					return this;
 				}
-
 				return	val === "" ||  e.val.toLowerCase().indexOf(val.toLowerCase()) >= 0 || (e.meta || "").toLowerCase().indexOf(val.toLowerCase()) >= 0;
 			}, this));
+
 		}
 
 		if(vals.length) {
@@ -422,6 +417,27 @@ if (!Array.prototype.map) {
 		} else {
 			this.hideList();
 		}
+	}
+
+	Plugin.prototype.filterList = function (val) {
+		if(val == this.lastFilter){
+			return;
+		}
+
+		val = (val && val.toLowerCase()) || "";
+
+		this.lastFilter = val;
+		this.$itemList.find(".-sew-list-item").remove();
+
+		var values, that = this;
+
+
+
+		this.filterHandle = setTimeout(function(){
+			that.getValues(val,function(data){
+				that._filterList(data,val);
+			});
+		},0);
 	};
 
 	Plugin.getUniqueElements = function (elements) {
